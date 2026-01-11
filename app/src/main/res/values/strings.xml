@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">Intelligent Notifications</string>
+
+    <!-- Notification Listener Service -->
+    <string name="notification_listener_service_name">Notification Manager Service</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Notifications</string>
+    <string name="summary_title">Summary</string>
+    <string name="no_notifications">No notifications</string>
+    <string name="all_caught_up">You\'re all caught up!</string>
+
+    <!-- Categories -->
+    <string name="category_critical">Critical</string>
+    <string name="category_important">Important</string>
+    <string name="category_normal">Normal</string>
+    <string name="category_silent">Silent</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="notification_access">Notification Access</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="permission_required">This app needs notification access to work properly.</string>
+
+    <!-- Onboarding -->
+    <string name="welcome_title">Welcome to\nIntelligent Notifications</string>
+    <string name="feature_prioritization">Smart Prioritization</string>
+    <string name="feature_learning">Learns Your Preferences</string>
+    <string name="feature_spam">Silence Spam</string>
+    <string name="feature_privacy">100% Private</string>
+
+    <!-- Actions -->
+    <string name="dismiss">Dismiss</string>
+    <string name="delete">Delete</string>
+    <string name="mark_read">Mark as Read</string>
+    <string name="settings">Settings</string>
+
+    <!-- App Behavior -->
+    <string name="spammy_apps">Spammy Apps</string>
+    <string name="all_apps">All Apps</string>
+    <string name="lock_category">Lock Category</string>
+    <string name="unlock">Unlock</string>
+    <string name="reset_behavior">Reset Behavior</string>
+</resources>
