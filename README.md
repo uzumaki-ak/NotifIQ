@@ -172,5 +172,3 @@ MIT License - See LICENSE file
 Built with 🔥 by Ak
 
 ---
-
-**Ready to build? Let's fucking go!** 🚀
