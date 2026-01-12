@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.notifmanager.data.database.entities.NotificationEntity
 import com.notifmanager.data.repository.NotificationRepository
+import com.notifmanager.presentation.ui.screens.TimeFilter
 import com.notifmanager.utils.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -13,10 +14,7 @@ import javax.inject.Inject
 /**
  * VIEWMODEL - Home Screen
  *
- * Manages UI state and business logic for home screen
- * ViewModels survive configuration changes (screen rotation)
- *
- * This is the bridge between UI and data layer
+ * UPDATED: Added time-based filtering
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -27,14 +25,21 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // Get all notifications from database
-    val allNotifications: StateFlow<List<NotificationEntity>> = repository
-        .getAllActiveNotifications()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    // Current time filter
+    private val _timeFilter = MutableStateFlow(TimeFilter.ALL_TIME)
+    val timeFilter: StateFlow<TimeFilter> = _timeFilter.asStateFlow()
+
+    // Get all notifications from database with time filter
+    val allNotifications: StateFlow<List<NotificationEntity>> = combine(
+        _timeFilter,
+        repository.getAllActiveNotifications()
+    ) { filter, notifications ->
+        filterByTime(notifications, filter)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // Group notifications by category
     val groupedNotifications: StateFlow<Map<Constants.NotificationCategory, List<NotificationEntity>>> =
@@ -68,7 +73,6 @@ class HomeViewModel @Inject constructor(
     )
 
     init {
-        // Load initial data
         loadNotifications()
     }
 
@@ -81,6 +85,23 @@ class HomeViewModel @Inject constructor(
             // Notifications automatically loaded via Flow
             _uiState.update { it.copy(isLoading = false) }
         }
+    }
+
+    /**
+     * Set time filter
+     */
+    fun setTimeFilter(filter: TimeFilter) {
+        _timeFilter.value = filter
+    }
+
+    /**
+     * Filter notifications by time
+     */
+    private fun filterByTime(notifications: List<NotificationEntity>, filter: TimeFilter): List<NotificationEntity> {
+        if (filter.hoursAgo == null) return notifications // ALL_TIME
+
+        val cutoffTime = System.currentTimeMillis() - (filter.hoursAgo * 60 * 60 * 1000L)
+        return notifications.filter { it.receivedTime >= cutoffTime }
     }
 
     /**

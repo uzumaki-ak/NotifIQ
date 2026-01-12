@@ -1,9 +1,11 @@
 package com.notifmanager.domain.usecase
 
 import android.service.notification.StatusBarNotification
+import com.notifmanager.data.database.entities.ContentBehaviorEntity
 import com.notifmanager.data.database.entities.NotificationEntity
 import com.notifmanager.data.repository.NotificationRepository
 import com.notifmanager.domain.scoring.ImportanceScorer
+import com.notifmanager.utils.ContentExtractor
 import com.notifmanager.utils.NotificationExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -12,50 +14,50 @@ import javax.inject.Inject
 /**
  * USE CASE: Process incoming notification
  *
- * This is the main workflow when a new notification arrives:
- * 1. Extract data from system notification
- * 2. Get app behavior data
- * 3. Calculate importance score
- * 4. Save to database
- * 5. Update frequency metrics
- *
- * Use cases encapsulate business logic - keeps code organized
+ * UPDATED: Now extracts and scores content-level (channel/sender)
  */
 class ProcessNotificationUseCase @Inject constructor(
     private val repository: NotificationRepository,
     private val scorer: ImportanceScorer,
-    private val extractor: NotificationExtractor
+    private val notificationExtractor: NotificationExtractor,
+    private val contentExtractor: ContentExtractor  // NEW
 ) {
 
-    /**
-     * Process a newly received notification
-     *
-     * @param sbn StatusBarNotification from Android system
-     * @return Notification ID (database row ID)
-     */
     suspend operator fun invoke(sbn: StatusBarNotification): Long = withContext(Dispatchers.IO) {
-        // Extract all data from system notification
+        // Extract basic notification data
         val packageName = sbn.packageName
-        val appName = extractor.getAppName(sbn)
-        val title = extractor.getTitle(sbn)
-        val text = extractor.getText(sbn)
-        val subText = extractor.getSubText(sbn)
-        val bigText = extractor.getBigText(sbn)
+        val appName = notificationExtractor.getAppName(sbn)
+        val title = notificationExtractor.getTitle(sbn)
+        val text = notificationExtractor.getText(sbn)
+        val subText = notificationExtractor.getSubText(sbn)
+        val bigText = notificationExtractor.getBigText(sbn)
         val postedTime = sbn.postTime
         val receivedTime = System.currentTimeMillis()
 
-        // Get or create behavior data for this app
+        // NEW: Extract content ID (channel/sender)
+        val (contentId, contentType) = contentExtractor.extractContent(packageName, title, text)
+
+        // Get app-level behavior
         val appBehavior = repository.getOrCreateAppBehavior(packageName)
 
-        // Get custom keywords for scoring
+        // NEW: Get content-level preference
+        val contentPreference = if (contentId != null) {
+            repository.getOrCreateContentPreference(packageName, contentId, contentType.name)
+        } else null
+
+        // NEW: Get content-level behavior
+        val contentBehavior = if (contentId != null) {
+            repository.getOrCreateContentBehavior(packageName, contentId, contentType.name)
+        } else null
+
+        // Get custom keywords
         val customKeywords = repository.getAllKeywordsList()
 
-        // Calculate how many notifications from this app in last hour
+        // Calculate frequency
         val oneHourAgo = System.currentTimeMillis() - (60 * 60 * 1000)
-        // This would need a DAO query, for now we use behavior data
         val notificationsLastHour = appBehavior.notificationsLastHour
 
-        // CALCULATE IMPORTANCE SCORE (the magic happens here)
+        // CALCULATE SCORE (with content-level data)
         val scoreBreakdown = scorer.calculateScore(
             packageName = packageName,
             appName = appName,
@@ -64,11 +66,13 @@ class ProcessNotificationUseCase @Inject constructor(
             subText = subText,
             bigText = bigText,
             appBehavior = appBehavior,
+            contentPreference = contentPreference,  // NEW
+            contentBehavior = contentBehavior,      // NEW
             customKeywords = customKeywords,
             notificationsLastHour = notificationsLastHour
         )
 
-        // Create notification entity to save
+        // Create notification entity
         val notification = NotificationEntity(
             packageName = packageName,
             appName = appName,
@@ -79,22 +83,27 @@ class ProcessNotificationUseCase @Inject constructor(
             postedTime = postedTime,
             receivedTime = receivedTime,
             baseScore = scoreBreakdown.baseScore,
-            contentScore = scoreBreakdown.contentScore,
+            contentScore = scoreBreakdown.contentPreferenceScore + scoreBreakdown.keywordScore,  // UPDATED
             frequencyScore = (scoreBreakdown.frequencyMultiplier * 100).toInt(),
-            behaviorScore = scoreBreakdown.behaviorAdjustment,
+            behaviorScore = scoreBreakdown.appBehaviorScore + scoreBreakdown.contentBehaviorScore,  // UPDATED
             finalScore = scoreBreakdown.finalScore,
             category = scoreBreakdown.category.name,
-            hasActions = extractor.hasActions(sbn),
+            hasActions = notificationExtractor.hasActions(sbn),
             isOngoing = sbn.isOngoing,
             priority = sbn.notification.priority,
             groupKey = sbn.groupKey
         )
 
-        // Save to database
+        // Save notification
         val notificationId = repository.insertNotification(notification)
 
-        // Update app behavior - increment received count
+        // Update app behavior
         repository.incrementNotificationReceived(packageName)
+
+        // NEW: Update content behavior if we have contentId
+        if (contentId != null) {
+            repository.incrementContentNotificationReceived(packageName, contentId)
+        }
 
         return@withContext notificationId
     }

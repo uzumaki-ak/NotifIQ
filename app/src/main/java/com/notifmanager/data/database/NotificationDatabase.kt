@@ -2,43 +2,30 @@ package com.notifmanager.data.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import com.notifmanager.data.database.dao.AppBehaviorDao
-import com.notifmanager.data.database.dao.KeywordDao
-import com.notifmanager.data.database.dao.NotificationDao
-import com.notifmanager.data.database.entities.AppBehaviorEntity
-import com.notifmanager.data.database.entities.KeywordEntity
-import com.notifmanager.data.database.entities.NotificationEntity
+import com.notifmanager.data.database.dao.*
+import com.notifmanager.data.database.entities.*
 
 /**
  * Main database class - Room Database
- * This is the single source of truth for all app data
  *
- * Room handles all SQL generation automatically
- * Database is accessed through DAOs (Data Access Objects)
+ * UPDATED: Added ContentPreference and ContentBehavior tables
  */
 @Database(
     entities = [
         NotificationEntity::class,
         AppBehaviorEntity::class,
-        KeywordEntity::class
+        KeywordEntity::class,
+        ContentPreferenceEntity::class,  // NEW
+        ContentBehaviorEntity::class     // NEW
     ],
-    version = 1,
+    version = 2,  // UPDATED version
     exportSchema = false
 )
 abstract class NotificationDatabase : RoomDatabase() {
 
-    /**
-     * Get NotificationDao for notification operations
-     */
     abstract fun notificationDao(): NotificationDao
-
-    /**
-     * Get AppBehaviorDao for behavior learning operations
-     */
     abstract fun appBehaviorDao(): AppBehaviorDao
-
-    /**
-     * Get KeywordDao for custom keyword operations
-     */
     abstract fun keywordDao(): KeywordDao
+    abstract fun contentPreferenceDao(): ContentPreferenceDao  // NEW
+    abstract fun contentBehaviorDao(): ContentBehaviorDao      // NEW
 }

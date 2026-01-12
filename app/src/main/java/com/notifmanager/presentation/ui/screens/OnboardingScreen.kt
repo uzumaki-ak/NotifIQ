@@ -1,31 +1,24 @@
 package com.notifmanager.presentation.ui.screens
 
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 /**
- * ONBOARDING SCREEN - First time user experience
+ * ONBOARDING SCREEN
  *
- * Explains:
- * 1. What the app does
- * 2. Why it needs notification access
- * 3. How to grant permission
+ * UPDATED: Uses callback for permission request
  */
 @Composable
 fun OnboardingScreen(
-    onComplete: () -> Unit
+    onComplete: () -> Unit,
+    onRequestPermission: () -> Unit = {}  // NEW
 ) {
-    val context = LocalContext.current
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -59,9 +52,15 @@ fun OnboardingScreen(
                 )
 
                 FeatureItem(
+                    emoji = "📱",
+                    title = "Channel-Level Learning",
+                    description = "Learns which YouTube channels & contacts you care about"
+                )
+
+                FeatureItem(
                     emoji = "🧠",
-                    title = "Learns Your Preferences",
-                    description = "Gets smarter as you use it"
+                    title = "Gets Smarter Over Time",
+                    description = "Adapts to your behavior automatically"
                 )
 
                 FeatureItem(
@@ -90,10 +89,7 @@ fun OnboardingScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = {
-                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                context.startActivity(intent)
-            },
+            onClick = onRequestPermission,  // UPDATED
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Grant Permission")

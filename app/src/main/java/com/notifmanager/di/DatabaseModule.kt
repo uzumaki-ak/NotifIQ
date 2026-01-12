@@ -3,9 +3,7 @@ package com.notifmanager.di
 import android.content.Context
 import androidx.room.Room
 import com.notifmanager.data.database.NotificationDatabase
-import com.notifmanager.data.database.dao.AppBehaviorDao
-import com.notifmanager.data.database.dao.KeywordDao
-import com.notifmanager.data.database.dao.NotificationDao
+import com.notifmanager.data.database.dao.*
 import com.notifmanager.utils.Constants
 import dagger.Module
 import dagger.Provides
@@ -17,16 +15,12 @@ import javax.inject.Singleton
 /**
  * HILT MODULE - Database dependency injection
  *
- * Tells Hilt how to create database and DAOs
- * Singleton = only one instance throughout app lifetime
+ * UPDATED: Added ContentPreferenceDao and ContentBehaviorDao
  */
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    /**
-     * Provide Room Database instance
-     */
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): NotificationDatabase {
@@ -35,34 +29,38 @@ object DatabaseModule {
             NotificationDatabase::class.java,
             Constants.DATABASE_NAME
         )
-            .fallbackToDestructiveMigration()  // Delete and recreate on schema change
+            .fallbackToDestructiveMigration()
             .build()
     }
 
-    /**
-     * Provide NotificationDao
-     */
     @Provides
     @Singleton
     fun provideNotificationDao(database: NotificationDatabase): NotificationDao {
         return database.notificationDao()
     }
 
-    /**
-     * Provide AppBehaviorDao
-     */
     @Provides
     @Singleton
     fun provideAppBehaviorDao(database: NotificationDatabase): AppBehaviorDao {
         return database.appBehaviorDao()
     }
 
-    /**
-     * Provide KeywordDao
-     */
     @Provides
     @Singleton
     fun provideKeywordDao(database: NotificationDatabase): KeywordDao {
         return database.keywordDao()
+    }
+
+    // NEW DAOs
+    @Provides
+    @Singleton
+    fun provideContentPreferenceDao(database: NotificationDatabase): ContentPreferenceDao {
+        return database.contentPreferenceDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideContentBehaviorDao(database: NotificationDatabase): ContentBehaviorDao {
+        return database.contentBehaviorDao()
     }
 }

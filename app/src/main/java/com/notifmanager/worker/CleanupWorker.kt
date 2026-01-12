@@ -12,12 +12,11 @@ import dagger.assisted.AssistedInject
 /**
  * BACKGROUND WORKER - Cleanup old notifications
  *
+ * UPDATED: Auto-delete after 2 days (configurable)
  * Runs daily to:
  * 1. Delete notifications older than 30 days
- * 2. Delete silent notifications older than 7 days
+ * 2. Delete silent notifications older than 2 days (NEW)
  * 3. Cleanup old app behavior data
- *
- * Keeps database size under control
  */
 @HiltWorker
 class CleanupWorker @AssistedInject constructor(
@@ -26,28 +25,37 @@ class CleanupWorker @AssistedInject constructor(
     private val repository: NotificationRepository
 ) : CoroutineWorker(context, params) {
 
-    /**
-     * Main work method - executed in background
-     */
     override suspend fun doWork(): Result {
         return try {
+            // Get auto-delete setting (default 2 days)
+            val autoDeleteDays = getAutoDeleteDays()
+
             // Delete old notifications (30+ days)
             val deletedOld = repository.cleanupOldNotifications(
                 Constants.CLEANUP_OLD_NOTIFICATIONS_DAYS
             )
 
-            // Delete old silent notifications (7+ days)
-            val deletedSilent = repository.cleanupSilentNotifications(
-                Constants.CLEANUP_SILENT_NOTIFICATIONS_DAYS
-            )
+            // Delete old silent notifications (2+ days by default)
+            val deletedSilent = repository.cleanupSilentNotifications(autoDeleteDays)
+
+            // Delete normal/important notifications older than auto-delete setting
+            val deletedAuto = repository.cleanupOlderThan(autoDeleteDays)
 
             // Log results
-            println("Cleanup completed: $deletedOld old, $deletedSilent silent notifications deleted")
+            println("Cleanup completed: $deletedOld old, $deletedSilent silent, $deletedAuto auto-deleted")
 
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
-            Result.retry()  // Retry if cleanup fails
+            Result.retry()
         }
+    }
+
+    /**
+     * Get auto-delete days from SharedPreferences
+     */
+    private fun getAutoDeleteDays(): Int {
+        val prefs = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        return prefs.getInt(Constants.PrefsKeys.AUTO_DELETE_DAYS, 2) // Default 2 days
     }
 }
