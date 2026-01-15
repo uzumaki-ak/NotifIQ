@@ -269,4 +269,39 @@ class NotificationRepository @Inject constructor(
     suspend fun updateContentBehaviorScore(appPackage: String, contentId: String, score: Int) {
         contentBehaviorDao.updateBehaviorScore(appPackage, contentId, score)
     }
+
+    suspend fun getNotificationById(id: Long): NotificationEntity? {
+        return notificationDao.getNotificationById(id)
+    }
+
+
+    /**
+     * Clear all notifications but keep behavior/preference data
+     */
+    suspend fun clearAllNotifications() {
+        notificationDao.deleteAllNotifications()
+    }
+
+    suspend fun setContentPreference(
+        appPackage: String,
+        contentId: String,
+        contentType: String,
+        score: Int
+    ) {
+        val existing = contentPreferenceDao.getPreference(appPackage, contentId)
+        if (existing != null) {
+            contentPreferenceDao.updatePreferenceScore(existing.id, score, System.currentTimeMillis())
+        } else {
+            val newPref = ContentPreferenceEntity(
+                appPackage = appPackage,
+                contentId = contentId,
+                contentType = contentType,
+                preferenceScore = score,
+                isLocked = true
+            )
+            contentPreferenceDao.insertOrUpdate(newPref)
+        }
+    }
+
+
 }

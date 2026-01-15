@@ -34,6 +34,11 @@ data class NotificationEntity(
     val finalScore: Int,  // Final calculated score (0-100)
     val category: String,  // CRITICAL, IMPORTANT, NORMAL, or SILENT
 
+    // NEW: Content identification
+    val contentId: String? = null,        // Channel/sender name
+    val contentType: String? = null,      // YOUTUBE_CHANNEL, WHATSAPP_CONTACT, etc.
+
+
     // User interaction tracking
     val isOpened: Boolean = false,  // Did user open/click notification?
     val isDismissed: Boolean = false,  // Did user dismiss it?

@@ -35,6 +35,7 @@ interface NotificationDao {
                 WHEN 'SILENT' THEN 4
             END,
             receivedTime DESC
+        LIMIT 500
     """)
     fun getAllActiveNotifications(): Flow<List<NotificationEntity>>
 
@@ -61,6 +62,20 @@ interface NotificationDao {
 
     @Query("UPDATE notifications SET isDismissed = 1, dismissedAt = :timestamp, timeToAction = :timestamp - receivedTime WHERE id = :notificationId")
     suspend fun markAsDismissed(notificationId: Long, timestamp: Long)
+
+
+
+    /**
+     * Delete all notifications (keeps behavior data intact)
+     */
+    @Query("DELETE FROM notifications")
+    suspend fun deleteAllNotifications()
+
+    /**
+     * Delete only displayed notifications (keep for learning)
+     */
+    @Query("UPDATE notifications SET isDeleted = 1 WHERE isActive = 1")
+    suspend fun softDeleteAllActive()
 
     @Query("UPDATE notifications SET isDeleted = 1 WHERE id = :notificationId")
     suspend fun softDelete(notificationId: Long)

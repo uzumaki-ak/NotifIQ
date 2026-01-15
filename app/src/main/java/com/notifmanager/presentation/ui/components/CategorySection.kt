@@ -22,10 +22,7 @@ import com.notifmanager.data.database.entities.NotificationEntity
 import com.notifmanager.utils.Constants
 
 /**
- * CATEGORY SECTION COMPONENT
- *
- * Displays a collapsible section for each priority category
- * Shows count and category color
+ * CATEGORY SECTION - UPDATED with action callbacks
  */
 @Composable
 fun CategorySection(
@@ -33,6 +30,8 @@ fun CategorySection(
     notifications: List<NotificationEntity>,
     onNotificationDismiss: (Long) -> Unit,
     onNotificationClick: (Long) -> Unit,
+    onMarkImportant: (Long) -> Unit,  // NEW
+    onMarkSilent: (Long) -> Unit,     // NEW
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(true) }
@@ -45,7 +44,7 @@ fun CategorySection(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Section header
+        // Header
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -63,7 +62,6 @@ fun CategorySection(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Color indicator
                     Box(
                         modifier = Modifier
                             .size(12.dp)
@@ -71,14 +69,12 @@ fun CategorySection(
                             .background(categoryColor)
                     )
 
-                    // Category name
                     Text(
                         text = category.displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Count badge
                     if (notifications.isNotEmpty()) {
                         Surface(
                             shape = CircleShape,
@@ -95,7 +91,6 @@ fun CategorySection(
                     }
                 }
 
-                // Expand/collapse icon
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand"
@@ -103,7 +98,7 @@ fun CategorySection(
             }
         }
 
-        // Notification list (animated)
+        // Notification list
         AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically(),
@@ -114,7 +109,6 @@ fun CategorySection(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (notifications.isEmpty()) {
-                    // Empty state
                     Text(
                         text = "No notifications",
                         modifier = Modifier.padding(16.dp),
@@ -122,12 +116,13 @@ fun CategorySection(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    // Show notifications
                     notifications.forEach { notification ->
                         NotificationCard(
                             notification = notification,
                             onDismiss = { onNotificationDismiss(notification.id) },
-                            onClick = { onNotificationClick(notification.id) }
+                            onClick = { onNotificationClick(notification.id) },
+                            onMarkImportant = { onMarkImportant(notification.id) },  // NEW
+                            onMarkSilent = { onMarkSilent(notification.id) }          // NEW
                         )
                     }
                 }

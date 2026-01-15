@@ -17,15 +17,13 @@ import com.notifmanager.presentation.viewmodel.HomeViewModel
 import com.notifmanager.utils.Constants
 
 /**
- * HOME SCREEN - Main notification inbox
- *
- * FIXED: Settings button overlap, Notifications text position
- * ADDED: Time filter dropdown
+ * HOME SCREEN - COMPLETELY FIXED UI
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateToSettings: () -> Unit,
+    onNavigateToPreferences: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val groupedNotifications by viewModel.groupedNotifications.collectAsState()
@@ -38,32 +36,21 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Notifications",
-                        modifier = Modifier.padding(start = 0.dp) // FIX: No extra padding
-                    )
+                    // FIXED: Proper title with no overlap
+//                    Text("Notifications")
                 },
                 actions = {
-                    // Time filter button
+                    // Filter button
                     IconButton(onClick = { showFilterMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.FilterList,
-                            contentDescription = "Filter by time"
-                        )
+                        Icon(Icons.Default.FilterList, "Filter")
                     }
 
-                    // Settings button (FIXED: proper spacing)
-                    IconButton(
-                        onClick = onNavigateToSettings,
-                        modifier = Modifier.padding(end = 8.dp) // FIX: Add spacing
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings"
-                        )
+                    // FIXED: Settings button with proper spacing
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, "Settings")
                     }
 
-                    // Time filter dropdown menu
+                    // Dropdown for time filter
                     DropdownMenu(
                         expanded = showFilterMenu,
                         onDismissRequest = { showFilterMenu = false }
@@ -112,68 +99,124 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = PaddingValues(16.dp)
         ) {
-            // Show current filter
+            // Current filter indicator
             item {
-                FilterChip(timeFilter)
-                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        text = "Showing: ${timeFilter.displayName}",
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Show summary at top
+            // Summary card
             item {
                 SummaryCard(categoryCounts)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Critical section
-            val criticalNotifications = groupedNotifications[Constants.NotificationCategory.CRITICAL] ?: emptyList()
-            if (criticalNotifications.isNotEmpty()) {
+
+            // CLEAR ALL button
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { viewModel.clearAllNotifications() },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("🗑️ Clear All Notifications")
+                    }
+
+                    Button(
+                        onClick = onNavigateToPreferences,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("⚙️ Preferences")
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+
+            // Button to manage channel preferences
+            item {
+                Button(
+                    onClick = onNavigateToPreferences,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(" Manage Channel Preferences")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Critical notifications
+            val critical = groupedNotifications[Constants.NotificationCategory.CRITICAL] ?: emptyList()
+            if (critical.isNotEmpty()) {
                 item {
                     CategorySection(
                         category = Constants.NotificationCategory.CRITICAL,
-                        notifications = criticalNotifications,
+                        notifications = critical,
                         onNotificationDismiss = { viewModel.dismissNotification(it) },
-                        onNotificationClick = { viewModel.markAsOpened(it) }
+                        onNotificationClick = { viewModel.markAsOpened(it) },
+                        onMarkImportant = { viewModel.markChannelImportant(it) },  // NEW
+                        onMarkSilent = { viewModel.markChannelSilent(it) }          // NEW
                     )
                 }
             }
 
-            // Important section
-            val importantNotifications = groupedNotifications[Constants.NotificationCategory.IMPORTANT] ?: emptyList()
-            if (importantNotifications.isNotEmpty()) {
+            // Important notifications
+            val important = groupedNotifications[Constants.NotificationCategory.IMPORTANT] ?: emptyList()
+            if (important.isNotEmpty()) {
                 item {
                     CategorySection(
                         category = Constants.NotificationCategory.IMPORTANT,
-                        notifications = importantNotifications,
+                        notifications = important,
                         onNotificationDismiss = { viewModel.dismissNotification(it) },
-                        onNotificationClick = { viewModel.markAsOpened(it) }
+                        onNotificationClick = { viewModel.markAsOpened(it) },
+                        onMarkImportant = { viewModel.markChannelImportant(it) },
+                        onMarkSilent = { viewModel.markChannelSilent(it) }
                     )
                 }
             }
 
-            // Normal section
-            val normalNotifications = groupedNotifications[Constants.NotificationCategory.NORMAL] ?: emptyList()
-            if (normalNotifications.isNotEmpty()) {
+            // Normal notifications
+            val normal = groupedNotifications[Constants.NotificationCategory.NORMAL] ?: emptyList()
+            if (normal.isNotEmpty()) {
                 item {
                     CategorySection(
                         category = Constants.NotificationCategory.NORMAL,
-                        notifications = normalNotifications,
+                        notifications = normal,
                         onNotificationDismiss = { viewModel.dismissNotification(it) },
-                        onNotificationClick = { viewModel.markAsOpened(it) }
+                        onNotificationClick = { viewModel.markAsOpened(it) },
+                        onMarkImportant = { viewModel.markChannelImportant(it) },
+                        onMarkSilent = { viewModel.markChannelSilent(it) }
                     )
                 }
             }
 
-            // Silent section
-            val silentNotifications = groupedNotifications[Constants.NotificationCategory.SILENT] ?: emptyList()
-            if (silentNotifications.isNotEmpty()) {
+            // Silent notifications
+            val silent = groupedNotifications[Constants.NotificationCategory.SILENT] ?: emptyList()
+            if (silent.isNotEmpty()) {
                 item {
                     CategorySection(
                         category = Constants.NotificationCategory.SILENT,
-                        notifications = silentNotifications,
+                        notifications = silent,
                         onNotificationDismiss = { viewModel.dismissNotification(it) },
-                        onNotificationClick = { viewModel.markAsOpened(it) }
+                        onNotificationClick = { viewModel.markAsOpened(it) },
+                        onMarkImportant = { viewModel.markChannelImportant(it) },
+                        onMarkSilent = { viewModel.markChannelSilent(it) }
                     )
                 }
             }
@@ -188,51 +231,20 @@ fun HomeScreen(
     }
 }
 
-/**
- * Filter chip showing current time filter
- */
-@Composable
-fun FilterChip(timeFilter: TimeFilter) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = MaterialTheme.shapes.small
-    ) {
-        Text(
-            text = "Showing: ${timeFilter.displayName}",
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-    }
-}
-
-/**
- * Summary card showing notification counts
- */
 @Composable
 fun SummaryCard(categoryCounts: Map<String, Int>) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Summary",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                style = MaterialTheme.typography.titleMedium
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -256,15 +268,11 @@ fun SummaryItem(label: String, count: Int, color: Color) {
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            style = MaterialTheme.typography.labelSmall
         )
     }
 }
 
-/**
- * Empty state when no notifications
- */
 @Composable
 fun EmptyState() {
     Box(
@@ -274,23 +282,13 @@ fun EmptyState() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "No notifications",
-                style = MaterialTheme.typography.titleLarge
-            )
+            Text("No notifications", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "You're all caught up!",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text("You're all caught up!", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
-/**
- * Time filter enum
- */
 enum class TimeFilter(val displayName: String, val hoursAgo: Int?) {
     LAST_2_HOURS("Last 2 hours", 2),
     LAST_5_HOURS("Last 5 hours", 5),

@@ -5,7 +5,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.notifmanager.presentation.ui.screens.HomeScreen
+import com.notifmanager.presentation.ui.screens.LLMSettingsScreen
 import com.notifmanager.presentation.ui.screens.OnboardingScreen
+import com.notifmanager.presentation.ui.screens.PreferencesScreen
 import com.notifmanager.presentation.ui.screens.SettingsScreen
 
 /**
@@ -18,6 +20,8 @@ sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
     object Home : Screen("home")
     object Settings : Screen("settings")
+    object Preferences : Screen("preferences")
+    object LLMSettings : Screen("llm_settings")
 }
 
 @Composable
@@ -46,15 +50,32 @@ fun AppNavigation(
             HomeScreen(
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToPreferences = {  // ADD THIS
+                    navController.navigate(Screen.Preferences.route)
+                }
+            )
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateToLLMSettings = {  // ADD THIS
+                    navController.navigate(Screen.LLMSettings.route)
                 }
             )
         }
 
-        composable(Screen.Settings.route) {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.navigateUp()
-                }
+        // Preferences screen
+        composable(Screen.Preferences.route) {
+            PreferencesScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        // LLM Settings screen
+        composable(Screen.LLMSettings.route) {
+            LLMSettingsScreen(
+                onNavigateBack = { navController.navigateUp() }
             )
         }
     }

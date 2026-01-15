@@ -145,6 +145,52 @@ class HomeViewModel @Inject constructor(
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
     }
+
+    /**
+     * Mark channel/sender as important
+     */
+    fun markChannelImportant(notificationId: Long) {
+        viewModelScope.launch {
+            val notification = repository.getNotificationById(notificationId)
+            if (notification != null && notification.contentId != null) {
+                // Set preference to +20 (Important)
+                repository.setContentPreference(
+                    notification.packageName,
+                    notification.contentId,
+                    notification.contentType ?: "GENERIC",
+                    20
+                )
+            }
+        }
+    }
+
+    /**
+     * Mark channel/sender as silent
+     */
+    fun markChannelSilent(notificationId: Long) {
+        viewModelScope.launch {
+            val notification = repository.getNotificationById(notificationId)
+            if (notification != null && notification.contentId != null) {
+                // Set preference to -20 (Silent)
+                repository.setContentPreference(
+                    notification.packageName,
+                    notification.contentId,
+                    notification.contentType ?: "GENERIC",
+                    -20
+                )
+            }
+        }
+    }
+
+    /**
+     * Clear all notifications (but keep learning data)
+     */
+    fun clearAllNotifications() {
+        viewModelScope.launch {
+            repository.clearAllNotifications()
+        }
+    }
+
 }
 
 /**
